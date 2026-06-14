@@ -7,4 +7,30 @@ services:
     volumes:
       - ./:/app
     entrypoint: ["python", "/app/two_body_sim.py"]
-    command: ["--help"]
+    command:
+      - "--m1"
+      - "5.972e24"
+      - "--x1"
+      - "0"
+      - "--y1"
+      - "0"
+      - "--vx1"
+      - "0"
+      - "--vy1"
+      - "0"
+      - "--m2"
+      - "7.342e22"
+      - "--x2"
+      - "3.844e8"
+      - "--y2"
+      - "0"
+      - "--vx2"
+      - "0"
+      - "--vy2"
+      - "1022"
+      - "--time"
+      - "2.36e6"
+      - "--dt"
+      - "600"
+      - "--output-dir"
+      - "/app"
