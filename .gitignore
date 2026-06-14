@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+Thumbs.db
+.env
+.env.*
+!.env.example
+*.log
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+.idea/
+.vscode/
+output/
+*.csv
