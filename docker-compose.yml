@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  two-body-sim:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    entrypoint: ["python", "/app/two_body_sim.py"]
+    command: ["--help"]
