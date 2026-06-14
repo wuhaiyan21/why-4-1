@@ -34,3 +34,13 @@ services:
       - "600"
       - "--output-dir"
       - "/app"
+
+  two-body-sim-config:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    entrypoint: ["python", "/app/two_body_sim.py"]
+    command:
+      - "--config"
+      - "/app/earth_moon_config.json"

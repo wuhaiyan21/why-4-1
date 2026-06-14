@@ -78,7 +78,7 @@ def adaptive_dt(dt, dt_init, r_current, initial_distance):
 
 
 def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
-             csv_path, json_path):
+             csv_path, json_path, sample_interval=1):
     b1 = Body(m1, x1, y1, vx1, vy1)
     b2 = Body(m2, x2, y2, vx2, vy2)
 
@@ -96,6 +96,12 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
     track1 = []
     track2 = []
     dt_history = []
+
+    initial_state = (b1.x, b1.y, b1.vx, b1.vy, b2.x, b2.y, b2.vx, b2.vy)
+
+    _, _, r0 = compute_force(b1, b2)
+    min_distance = r0
+    max_distance = r0
 
     records.append((t, b1.x, b1.y, b2.x, b2.y, dt))
     track1.append((b1.x, b1.y))
@@ -121,6 +127,10 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
             dt = total_time - t
 
         _, _, r_current = compute_force(b1, b2)
+        if r_current < min_distance:
+            min_distance = r_current
+        if r_current > max_distance:
+            max_distance = r_current
         new_dt, triggered = adaptive_dt(dt, dt_init, r_current, initial_distance)
         if triggered:
             adaptive_trigger_count += 1
@@ -163,10 +173,37 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
             print(f'{t:>12.4g}  {r:>14.4g}  {dt:>10.3g}  {current_energy:>16.4e}  {current_deviation:>10.4f}')
             sys.stdout.flush()
 
-        records.append((t, b1.x, b1.y, b2.x, b2.y, dt))
-        track1.append((b1.x, b1.y))
-        track2.append((b2.x, b2.y))
         dt_history.append(dt)
+
+        if actual_steps % sample_interval == 0:
+            records.append((t, b1.x, b1.y, b2.x, b2.y, dt))
+            track1.append((b1.x, b1.y))
+            track2.append((b2.x, b2.y))
+
+    final_state = (b1.x, b1.y, b1.vx, b1.vy, b2.x, b2.y, b2.vx, b2.vy)
+
+    def compute_eccentricity(state):
+        x1, y1, vx1, vy1, x2, y2, vx2, vy2 = state
+        total_mass = m1 + m2
+        dx = x2 - x1
+        dy = y2 - y1
+        dvx = vx2 - vx1
+        dvy = vy2 - vy1
+        r = math.sqrt(dx * dx + dy * dy)
+        v_sq = dvx * dvx + dvy * dvy
+        h = dx * dvy - dy * dvx
+        h_sq = h * h
+        mu = G * total_mass
+        if mu == 0 or r == 0:
+            return 0.0
+        e_x = (v_sq / mu - 1.0 / r) * dx - (dvx * (dx * dvx + dy * dvy)) / mu
+        e_y = (v_sq / mu - 1.0 / r) * dy - (dvy * (dx * dvx + dy * dvy)) / mu
+        eccentricity = math.sqrt(e_x * e_x + e_y * e_y)
+        return eccentricity
+
+    ecc_initial = compute_eccentricity(initial_state)
+    ecc_final = compute_eccentricity(final_state)
+    eccentricity = (ecc_initial + ecc_final) / 2.0
 
     final_energy = compute_energy(b1, b2)
     if initial_energy != 0:
@@ -188,7 +225,8 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
             'body1': {'mass': m1, 'position': [x1, y1], 'velocity': [vx1, vy1]},
             'body2': {'mass': m2, 'position': [x2, y2], 'velocity': [vx2, vy2]},
             'total_time': total_time,
-            'initial_dt': dt_init
+            'initial_dt': dt_init,
+            'sample_interval': sample_interval
         },
         'final_positions': {
             'body1': [b1.x, b1.y],
@@ -199,7 +237,13 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
             'final': final_energy,
             'deviation_percent': energy_deviation_pct
         },
+        'orbit_geometry': {
+            'min_distance': min_distance,
+            'max_distance': max_distance,
+            'eccentricity': eccentricity
+        },
         'actual_steps': actual_steps,
+        'csv_rows': len(records),
         'adaptive_trigger_count': adaptive_trigger_count,
         'min_dt_used': min(dt_history),
         'max_dt_used': max(dt_history)
@@ -312,6 +356,54 @@ def draw_ascii_track(track1, track2, width=80, height=24):
     print('       交汇: #(轻) &(中) 8(重)  S/s=起点  E/e=终点')
 
 
+def load_config(config_path):
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+
+def merge_config_and_args(config, args):
+    result = {}
+    arg_map = {
+        'm1': ('body1', 'mass'),
+        'x1': ('body1', 'position', 0),
+        'y1': ('body1', 'position', 1),
+        'vx1': ('body1', 'velocity', 0),
+        'vy1': ('body1', 'velocity', 1),
+        'm2': ('body2', 'mass'),
+        'x2': ('body2', 'position', 0),
+        'y2': ('body2', 'position', 1),
+        'vx2': ('body2', 'velocity', 0),
+        'vy2': ('body2', 'velocity', 1),
+        'time': ('total_time',),
+        'dt': ('initial_dt',),
+        'sample_interval': ('sample_interval',),
+        'csv': ('csv_output',),
+        'json': ('json_output',),
+        'output_dir': ('output_dir',),
+    }
+
+    def get_nested(d, keys):
+        for k in keys:
+            if isinstance(d, dict) and k in d:
+                d = d[k]
+            elif isinstance(d, list) and isinstance(k, int) and k < len(d):
+                d = d[k]
+            else:
+                return None
+        return d
+
+    for arg_name, config_keys in arg_map.items():
+        arg_val = getattr(args, arg_name, None)
+        if arg_val is not None:
+            result[arg_name] = arg_val
+        elif config is not None:
+            config_val = get_nested(config, config_keys)
+            if config_val is not None:
+                result[arg_name] = config_val
+
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='双体轨道仿真工具 - 基于牛顿万有引力的N=2体数值仿真',
@@ -320,39 +412,63 @@ def main():
   %(prog)s --m1 5.972e24 --x1 0 --y1 0 --vx1 0 --vy1 0 \\
            --m2 7.342e22 --x2 3.844e8 --y2 0 --vx2 0 --vy2 1022 \\
            --time 2.36e6 --dt 600
-  上述参数近似模拟地月系统一个月的轨道运动。'''
+  上述参数近似模拟地月系统一个月的轨道运动。
+
+  使用配置文件:
+  %(prog)s --config earth_moon_config.json'''
     )
-    parser.add_argument('--m1', type=float, required=True, help='天体1的质量 (kg)')
-    parser.add_argument('--x1', type=float, required=True, help='天体1初始x坐标 (m)')
-    parser.add_argument('--y1', type=float, required=True, help='天体1初始y坐标 (m)')
-    parser.add_argument('--vx1', type=float, required=True, help='天体1初始x方向速度 (m/s)')
-    parser.add_argument('--vy1', type=float, required=True, help='天体1初始y方向速度 (m/s)')
-    parser.add_argument('--m2', type=float, required=True, help='天体2的质量 (kg)')
-    parser.add_argument('--x2', type=float, required=True, help='天体2初始x坐标 (m)')
-    parser.add_argument('--y2', type=float, required=True, help='天体2初始y坐标 (m)')
-    parser.add_argument('--vx2', type=float, required=True, help='天体2初始x方向速度 (m/s)')
-    parser.add_argument('--vy2', type=float, required=True, help='天体2初始y方向速度 (m/s)')
-    parser.add_argument('--time', type=float, required=True, help='仿真总时长 (秒)')
-    parser.add_argument('--dt', type=float, required=True, help='初始时间步长 (秒)')
-    parser.add_argument('--csv', type=str, default='trajectory.csv', help='CSV输出文件路径 (默认: trajectory.csv)')
-    parser.add_argument('--json', type=str, default='summary.json', help='JSON摘要输出路径 (默认: summary.json)')
-    parser.add_argument('--output-dir', type=str, default='.', help='输出文件所在目录 (默认: 当前目录)')
+    parser.add_argument('--config', type=str, help='JSON配置文件路径')
+    parser.add_argument('--m1', type=float, help='天体1的质量 (kg)')
+    parser.add_argument('--x1', type=float, help='天体1初始x坐标 (m)')
+    parser.add_argument('--y1', type=float, help='天体1初始y坐标 (m)')
+    parser.add_argument('--vx1', type=float, help='天体1初始x方向速度 (m/s)')
+    parser.add_argument('--vy1', type=float, help='天体1初始y方向速度 (m/s)')
+    parser.add_argument('--m2', type=float, help='天体2的质量 (kg)')
+    parser.add_argument('--x2', type=float, help='天体2初始x坐标 (m)')
+    parser.add_argument('--y2', type=float, help='天体2初始y坐标 (m)')
+    parser.add_argument('--vx2', type=float, help='天体2初始x方向速度 (m/s)')
+    parser.add_argument('--vy2', type=float, help='天体2初始y方向速度 (m/s)')
+    parser.add_argument('--time', type=float, help='仿真总时长 (秒)')
+    parser.add_argument('--dt', type=float, help='初始时间步长 (秒)')
+    parser.add_argument('--sample-interval', type=int, dest='sample_interval', help='CSV采样间隔，每N步写一行 (默认: 1)')
+    parser.add_argument('--csv', type=str, help='CSV输出文件路径 (默认: trajectory.csv)')
+    parser.add_argument('--json', type=str, help='JSON摘要输出路径 (默认: summary.json)')
+    parser.add_argument('--output-dir', type=str, dest='output_dir', help='输出文件所在目录 (默认: 当前目录)')
 
     args = parser.parse_args()
 
-    out_dir = Path(args.output_dir)
+    config = None
+    if args.config:
+        config = load_config(args.config)
+
+    merged = merge_config_and_args(config, args)
+
+    required_params = ['m1', 'x1', 'y1', 'vx1', 'vy1', 'm2', 'x2', 'y2', 'vx2', 'vy2', 'time', 'dt']
+    missing = [p for p in required_params if p not in merged]
+    if missing:
+        print(f'错误: 缺少必要参数: {", ".join(missing)}', file=sys.stderr)
+        print('请通过命令行参数或配置文件提供这些参数。', file=sys.stderr)
+        sys.exit(1)
+
+    sample_interval = merged.get('sample_interval', 1)
+    if sample_interval < 1:
+        print(f'错误: 采样间隔必须 >= 1，当前值: {sample_interval}', file=sys.stderr)
+        sys.exit(1)
+
+    out_dir = Path(merged.get('output_dir', '.'))
     out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / args.csv
-    json_path = out_dir / args.json
+    csv_path = out_dir / merged.get('csv', 'trajectory.csv')
+    json_path = out_dir / merged.get('json', 'summary.json')
 
     simulate(
-        m1=args.m1, m2=args.m2,
-        x1=args.x1, y1=args.y1,
-        x2=args.x2, y2=args.y2,
-        vx1=args.vx1, vy1=args.vy1,
-        vx2=args.vx2, vy2=args.vy2,
-        total_time=args.time, dt_init=args.dt,
-        csv_path=csv_path, json_path=json_path
+        m1=merged['m1'], m2=merged['m2'],
+        x1=merged['x1'], y1=merged['y1'],
+        x2=merged['x2'], y2=merged['y2'],
+        vx1=merged['vx1'], vy1=merged['vy1'],
+        vx2=merged['vx2'], vy2=merged['vy2'],
+        total_time=merged['time'], dt_init=merged['dt'],
+        csv_path=csv_path, json_path=json_path,
+        sample_interval=sample_interval
     )
 
 

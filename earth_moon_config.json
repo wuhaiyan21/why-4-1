@@ -1,0 +1,18 @@
+{
+  "body1": {
+    "mass": 5.972e24,
+    "position": [0, 0],
+    "velocity": [0, 0]
+  },
+  "body2": {
+    "mass": 7.342e22,
+    "position": [3.844e8, 0],
+    "velocity": [0, 1022]
+  },
+  "total_time": 2.36e6,
+  "initial_dt": 600,
+  "sample_interval": 10,
+  "csv_output": "trajectory.csv",
+  "json_output": "summary.json",
+  "output_dir": "/app"
+}
