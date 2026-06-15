@@ -163,10 +163,10 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
             current_deviation = 0.0
 
         if current_deviation > 1.0 and not warned:
-            print(f'⚠️  警告: t={t:.4g}s 时能量相对偏差已达 {current_deviation:.4f}%，超过1%阈值！', file=sys.stderr)
+            print(f'[WARN] 警告: t={t:.4g}s 时能量相对偏差已达 {current_deviation:.4f}%，超过1%阈值！', file=sys.stderr)
             warned = True
         elif current_deviation > 1.0 and step_counter % max(1, print_interval // 2) == 0:
-            print(f'⚠️  持续警告: t={t:.4g}s 能量偏差 {current_deviation:.4f}%', file=sys.stderr)
+            print(f'[WARN] 持续警告: t={t:.4g}s 能量偏差 {current_deviation:.4f}%', file=sys.stderr)
 
         if step_counter % print_interval == 0 or step_counter == 1:
             _, _, r = compute_force(b1, b2)
@@ -259,7 +259,7 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
         json.dump(summary, f, indent=2)
 
     if energy_deviation_pct > 1.0:
-        print(f'⚠️  最终警告: 能量相对偏差为 {energy_deviation_pct:.4f}%，超过1%阈值！', file=sys.stderr)
+        print(f'[WARN] 最终警告: 能量相对偏差为 {energy_deviation_pct:.4f}%，超过1%阈值！', file=sys.stderr)
 
     print(f'最终能量: {final_energy:.10g} J')
     print(f'能量相对偏差: {energy_deviation_pct:.6f}%')

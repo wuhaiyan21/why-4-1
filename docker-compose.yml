@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   two-body-sim:
     image: python:3.11-slim
@@ -44,3 +42,15 @@ services:
     command:
       - "--config"
       - "/app/earth_moon_config.json"
+
+  batch-compare:
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./:/app
+    entrypoint: ["python", "/app/batch_compare.py"]
+    command:
+      - "--batch-config"
+      - "/app/batch_config_example.json"
+      - "--output-dir"
+      - "/app/batch_results"
