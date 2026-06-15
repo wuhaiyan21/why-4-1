@@ -174,11 +174,17 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
             sys.stdout.flush()
 
         dt_history.append(dt)
+        track1.append((b1.x, b1.y))
+        track2.append((b2.x, b2.y))
 
         if actual_steps % sample_interval == 0:
             records.append((t, b1.x, b1.y, b2.x, b2.y, dt))
-            track1.append((b1.x, b1.y))
-            track2.append((b2.x, b2.y))
+
+    _, _, r_final = compute_force(b1, b2)
+    if r_final < min_distance:
+        min_distance = r_final
+    if r_final > max_distance:
+        max_distance = r_final
 
     final_state = (b1.x, b1.y, b1.vx, b1.vy, b2.x, b2.y, b2.vx, b2.vy)
 

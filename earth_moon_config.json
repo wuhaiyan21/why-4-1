@@ -14,5 +14,5 @@
   "sample_interval": 10,
   "csv_output": "trajectory.csv",
   "json_output": "summary.json",
-  "output_dir": "/app"
+  "output_dir": "."
 }
