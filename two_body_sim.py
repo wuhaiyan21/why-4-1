@@ -78,7 +78,7 @@ def adaptive_dt(dt, dt_init, r_current, initial_distance):
 
 
 def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
-             csv_path, json_path, sample_interval=1):
+             csv_path, json_path, sample_interval=1, verbose=True):
     b1 = Body(m1, x1, y1, vx1, vy1)
     b2 = Body(m2, x2, y2, vx2, vy2)
 
@@ -112,15 +112,16 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
     step_counter = 0
     warned = False
 
-    print(f'===== 仿真开始 =====')
-    print(f'初始能量: {initial_energy:.10g} J')
-    print(f'初始距离: {initial_distance:.4g} m, 近距阈值: {threshold_distance:.4g} m')
-    print(f'初始时间步长: {dt_init} s')
-    print(f'进度每 {print_interval} 步输出一次')
-    print(f'{"="*60}')
-    print(f'{"时间(s)":>12}  {"距离(m)":>14}  {"步长(s)":>10}  {"能量(J)":>16}  {"偏差(%)":>10}')
-    print(f'{"-"*60}')
-    sys.stdout.flush()
+    if verbose:
+        print(f'===== 仿真开始 =====')
+        print(f'初始能量: {initial_energy:.10g} J')
+        print(f'初始距离: {initial_distance:.4g} m, 近距阈值: {threshold_distance:.4g} m')
+        print(f'初始时间步长: {dt_init} s')
+        print(f'进度每 {print_interval} 步输出一次')
+        print(f'{"="*60}')
+        print(f'{"时间(s)":>12}  {"距离(m)":>14}  {"步长(s)":>10}  {"能量(J)":>16}  {"偏差(%)":>10}')
+        print(f'{"-"*60}')
+        sys.stdout.flush()
 
     while t < total_time:
         if t + dt > total_time:
@@ -168,7 +169,7 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
         elif current_deviation > 1.0 and step_counter % max(1, print_interval // 2) == 0:
             print(f'[WARN] 持续警告: t={t:.4g}s 能量偏差 {current_deviation:.4f}%', file=sys.stderr)
 
-        if step_counter % print_interval == 0 or step_counter == 1:
+        if verbose and (step_counter % print_interval == 0 or step_counter == 1):
             _, _, r = compute_force(b1, b2)
             print(f'{t:>12.4g}  {r:>14.4g}  {dt:>10.3g}  {current_energy:>16.4e}  {current_deviation:>10.4f}')
             sys.stdout.flush()
@@ -217,7 +218,8 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
     else:
         energy_deviation_pct = 0.0
 
-    print(f'{"-"*60}')
+    if verbose:
+        print(f'{"-"*60}')
 
     with open(csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
@@ -261,16 +263,17 @@ def simulate(m1, m2, x1, y1, x2, y2, vx1, vy1, vx2, vy2, total_time, dt_init,
     if energy_deviation_pct > 1.0:
         print(f'[WARN] 最终警告: 能量相对偏差为 {energy_deviation_pct:.4f}%，超过1%阈值！', file=sys.stderr)
 
-    print(f'最终能量: {final_energy:.10g} J')
-    print(f'能量相对偏差: {energy_deviation_pct:.6f}%')
-    print(f'实际步数: {actual_steps}')
-    print(f'自适应步长触发次数: {adaptive_trigger_count}')
-    print(f'使用步长范围: {min(dt_history):.3g} ~ {max(dt_history):.3g} s')
-    print(f'CSV轨迹已保存至: {csv_path}')
-    print(f'JSON摘要已保存至: {json_path}')
+    if verbose:
+        print(f'最终能量: {final_energy:.10g} J')
+        print(f'能量相对偏差: {energy_deviation_pct:.6f}%')
+        print(f'实际步数: {actual_steps}')
+        print(f'自适应步长触发次数: {adaptive_trigger_count}')
+        print(f'使用步长范围: {min(dt_history):.3g} ~ {max(dt_history):.3g} s')
+        print(f'CSV轨迹已保存至: {csv_path}')
+        print(f'JSON摘要已保存至: {json_path}')
 
-    print('\n二维轨迹俯瞰图:')
-    draw_ascii_track(track1, track2)
+        print('\n二维轨迹俯瞰图:')
+        draw_ascii_track(track1, track2)
 
     return summary
 

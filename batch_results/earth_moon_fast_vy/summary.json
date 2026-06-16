@@ -1,0 +1,54 @@
+{
+  "initial_conditions": {
+    "body1": {
+      "mass": 5.972e+24,
+      "position": [
+        0,
+        0
+      ],
+      "velocity": [
+        0,
+        0
+      ]
+    },
+    "body2": {
+      "mass": 7.342e+22,
+      "position": [
+        384400000.0,
+        0
+      ],
+      "velocity": [
+        0,
+        1200
+      ]
+    },
+    "total_time": 1200,
+    "initial_dt": 60,
+    "sample_interval": 5
+  },
+  "final_positions": {
+    "body1": [
+      23.877291476423494,
+      0.029741005200031354
+    ],
+    "body2": [
+      384398057.81551754,
+      1439997.5808596695
+    ]
+  },
+  "energy": {
+    "initial": -2.326772167096774e+28,
+    "final": -2.3267721670965796e+28,
+    "deviation_percent": 8.354649352426763e-12
+  },
+  "orbit_geometry": {
+    "min_distance": 384400000.0,
+    "max_distance": 384400731.1238115,
+    "eccentricity": 0.3718722424982331
+  },
+  "actual_steps": 20,
+  "csv_rows": 5,
+  "adaptive_trigger_count": 0,
+  "min_dt_used": 60,
+  "max_dt_used": 60
+}

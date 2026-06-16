@@ -22,33 +22,33 @@
         1022
       ]
     },
-    "total_time": 2360000.0,
-    "initial_dt": 600,
+    "total_time": 1200,
+    "initial_dt": 10,
     "sample_interval": 10
   },
   "final_positions": {
     "body1": [
-      6831.102858273114,
-      29045251.393362734
+      23.877314378417154,
+      0.025391185470348625
     ],
     "body2": [
-      383844356.49319786,
-      49781247.273733124
+      384398057.81365484,
+      1226397.934675026
     ]
   },
   "energy": {
     "initial": -3.778711403096774e+28,
-    "final": -3.7787114031314046e+28,
-    "deviation_percent": 9.164673969201005e-10
+    "final": -3.7787114030967655e+28,
+    "deviation_percent": 2.211412166658019e-13
   },
   "orbit_geometry": {
-    "min_distance": 380627742.3467656,
+    "min_distance": 384399990.3043129,
     "max_distance": 384400000.0,
-    "eccentricity": 0.004931522226503074
+    "eccentricity": 0.004931522685085367
   },
-  "actual_steps": 3934,
-  "csv_rows": 394,
+  "actual_steps": 120,
+  "csv_rows": 13,
   "adaptive_trigger_count": 0,
-  "min_dt_used": 600,
-  "max_dt_used": 600
+  "min_dt_used": 10,
+  "max_dt_used": 10
 }
